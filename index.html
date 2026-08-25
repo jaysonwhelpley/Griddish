@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossHatch Alphabet - Vector Composer</title>
+  <link rel="stylesheet" href="vector-styles.css" />
+  <style>
+    /* Fallback if CSS fails to load */
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+  <link rel="icon" href="data:," />
+  <base href="./" />
+  <meta name="color-scheme" content="light dark" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>CrossHatch Alphabet - Vector Composer</h1>
+    <p class="hint">
+      Left: input and controls. Right: vector output.
+      <a href="raster.html" class="nav-link" id="navToRaster">Switch to Raster Mode</a>
+    </p>
+  </header>
+
+  <main>
+    <section class="panes">
+      <aside class="left-pane">
+        <div class="controls controls-vertical">
+          <label for="textInput" class="sr-only">Text</label>
+          <textarea id="textInput" class="text-input" placeholder="Type here..." rows="8"></textarea>
+
+          <div class="slider-control">
+            <label for="fontSize">Font Size (px): <span id="fontSizeValue">100</span></label>
+            <input type="range" id="fontSize" min="8" max="800" value="100" step="1" />
+          </div>
+
+          <div class="slider-control">
+            <label>Alignment:</label>
+            <div class="align-group" role="group" aria-label="Alignment">
+              <button type="button" class="btn align-btn active" data-align="left" aria-label="Align Left" id="alignLeftBtn">
+                <img class="icon" src="Left.svg" alt="Left" />
+              </button>
+              <button type="button" class="btn align-btn" data-align="center" aria-label="Align Center" id="alignCenterBtn">
+                <img class="icon" src="Center.svg" alt="Center" />
+              </button>
+              <button type="button" class="btn align-btn" data-align="right" aria-label="Align Right" id="alignRightBtn">
+                <img class="icon" src="Right.svg" alt="Right" />
+              </button>
+            </div>
+            <input type="hidden" id="alignment" value="left" />
+          </div>
+
+          <div class="slider-control">
+            <label>
+              <input type="checkbox" id="enableCurves" checked />
+              Smooth corners (L-only)
+            </label>
+          </div>
+
+          <div class="slider-control">
+            <label>
+              <input type="checkbox" id="curveAtCrosses" />
+              Curve at 4-way intersections
+            </label>
+          </div>
+
+          <div class="slider-control">
+            <label>
+              <input type="checkbox" id="curveAtT" />
+              Curve T junctions (two arcs)
+            </label>
+          </div>
+
+          <div class="slider-control">
+            <label for="strokeWidth">Stroke Width: <span id="strokeWidthValue">6</span>px</label>
+            <input type="range" id="strokeWidth" min="1" max="60" value="6" step="0.5" />
+          </div>
+
+
+          <div class="slider-control">
+            <label>
+              <input type="checkbox" id="allCaps" />
+              Toggle ALL CAPS
+            </label>
+          </div>
+
+          <div class="slider-control">
+            <label>
+              <input type="checkbox" id="taperedEnds" />
+              Tapered brush ends
+            </label>
+          </div>
+
+          <div class="slider-control">
+            <label>
+              <input type="checkbox" id="colorizeLetters" />
+              Colorize letters by position in word
+            </label>
+          </div>
+
+            <div class="slider-control">
+              <label for="maxCharsPerLine">Max chars per line: <span id="maxCharsPerLineValue">40</span></label>
+              <input type="range" id="maxCharsPerLine" min="10" max="100" value="40" step="1" />
+            </div>
+
+          <div class="button-row">
+            <button id="clearBtn" class="btn" type="button" title="Clear input">Clear</button>
+            <button id="exportSvgBtn" class="btn" type="button" title="Download SVG">Export SVG</button>
+            <button id="exportPngBtn" class="btn" type="button" title="Download PNG">Export PNG</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="right-pane canvas-wrap">
+        <div id="canvas" class="canvas" aria-label="Rendered text area">
+          <svg id="canvasSvg" class="canvas-svg" xmlns="http://www.w3.org/2000/svg">
+            <g id="canvasContent"></g>
+          </svg>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <small>Vector-based rendering using pre-rotated SVG characters. Supports smooth corners, curves, tapered ends, and colorization.</small>
+  </footer>
+
+  <script src="prerotated-renderer.js"></script>
+</body>
+</html>

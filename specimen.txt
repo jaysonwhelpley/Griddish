@@ -1,0 +1,142 @@
+CROSSHATCH ALPHABET — SPECIMEN / KEY
+
+Tip: Paste this entire document into the app’s Text box. Toggle controls (Smooth corners, Tapered ends, Stroke width, Alignment, Max chars/line) to see different behaviors.
+
+============================================================
+SECTION 1 — UPPERCASE A–Z
+============================================================
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+Repeat blocks
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+============================================================
+SECTION 2 — LOWERCASE a–z (one-blank variants)
+============================================================
+abcdefghijklmnopqrstuvwxyz
+
+Repeat blocks
+abcdefghijklmnopqrstuvwxyz
+abcdefghijklmnopqrstuvwxyz
+
+============================================================
+SECTION 3 — DIGITS (gap strokes) & PUNCTUATION
+============================================================
+0123456789
+.,!?;:'" -_/\\()[]{}+=&#@*%$
+
+Digit breakdown rows (gap behavior):
+00000 11111 22222 33333 44444
+55555 66666 77777 88888 99999
+
+============================================================
+SECTION 4 — WORD PANGRAMS (coverage + rhythm)
+============================================================
+THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.
+SPHINX OF BLACK QUARTZ, JUDGE MY VOW!
+PACK MY BOX WITH FIVE DOZEN LIQUOR JUGS — 0123456789.
+
+Mixed case pangrams
+The Quick Brown Fox Jumps Over The Lazy Dog.
+Sphinx Of Black Quartz, Judge My Vow!
+
+============================================================
+SECTION 5 — JOIN STRESS (seams, overlaps, tapers)
+============================================================
+PPPPPPPPPP  (P = HHH: horizontal bands)
+TTTTTTTTTT  (T = VVV: vertical stacks)
+IIIIIIIIII  (I = HHV)
+XXXXXX      (X = CVC: repeated crosses)
+OOOOOO      (O = HVH)
+HHHHH HHHHH (mix with space to force free-end tapers)
+VVVVV VVVVV
+
+Alternation (edge cases)
+AVAVAVAVAV
+MNMNMNMNMN
+WEWEWEWEWE
+HCHCHCHCHC
+VHVHVHVHVH
+
+============================================================
+SECTION 6 — GAP VARIANTS IN CONTEXT (digits encode h/v/c)
+============================================================
+GAP: 0000  — horizontal center gaps (h+h+h)
+GAP: 1111  — hh+v mix
+GAP: 2222  — hh+c mix
+GAP: 3333  — hv+h mix
+GAP: 4444  — hv+v mix
+GAP: 5555  — hv+c mix
+GAP: 6666  — hc+h mix
+GAP: 7777  — hc+v mix
+GAP: 8888  — hc+c mix
+GAP: 9999  — v+hh mix
+
+Contrast line (letters next to gaps)
+HELLO 0000 WORLD 9999
+
+============================================================
+SECTION 7 — ALIGNMENT & WRAP (toggle Left/Center/Right)
+============================================================
+Short
+This is a medium length line.
+This is a considerably longer line intended to demonstrate how wrapping interacts with the rotated layout and character grid when Max chars per line is adjusted.
+
+Centering parity (odd/even lengths)
+ODD
+EVEN
+ODDER
+EVENER
+ODDEST
+
+============================================================
+SECTION 8 — MULTILINE BLOCKS (line height & baselines)
+============================================================
+HELLO
+WORLD
+CROSSHATCH
+ALPHABET
+VECTOR
+COMPOSER
+
+Mixed lengths for wrap + taper endpoints
+ENDS
+AT TAPER POINTS
+AND CONTINUES TO NEXT LINE
+
+============================================================
+SECTION 9 — CURVE MODES (toggle Smooth corners / T / 4-way)
+============================================================
+L-CORNER SAMPLER
+LTLTLT LT LT LT
+HV HV HV HV HV
+
+CROSS SAMPLER
++ + + + +
+XXXXX XXXXX XXXXX
+
+T-JUNCTION SAMPLER
+TTTTT  TTTTT  TTTTT
+
+============================================================
+SECTION 10 — STROKE-WIDTH & TAPER VISUALS
+============================================================
+Set a thick stroke to inspect overdraw/overlap
+EDGE EDGE EDGE EDGE
+FREE END      FREE END
+LEFT TAPER →  ← RIGHT TAPER
+TOP TAPER  ↑  ↓ BOTTOM TAPER
+
+============================================================
+SECTION 11 — LONG PARAGRAPH (wrap + limit)
+============================================================
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere, sem at dictum convallis, turpis dui cursus eros, id hendrerit nisl mauris sed erat. Sed blandit, lorem at volutpat ultricies, velit arcu imperdiet orci, vitae fringilla eros lacus at nibh. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Curabitur aliquam, quam sed efficitur rutrum, justo justo sollicitudin nulla, vitae luctus eros quam nec mauris. Etiam faucibus pharetra arcu, sed porttitor nisl consequat ac.
+
+============================================================
+SECTION 12 — MIXED GRID (digits, case, punctuation)
+============================================================
+A1B2C3D4E5 F6G7H8I9J0
+k-l_m+n=o p/q\\r(s)t{u}v[w]x y@z#&*$%
+
+END OF SPECIMEN

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossHatch Alphabet — Specimen Showcase</title>
+  <link rel="stylesheet" href="vector-styles.css" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    .specimen-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+    .panel { border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: var(--panel-bg, #fff); }
+    .panel h2 { margin: 0 0 8px 0; font-size: 16px; font-weight: 600; }
+    .normal-wrap { overflow: auto; max-height: 75vh; }
+    pre.normal-text { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; line-height: 1.4; }
+    .canvas-wrap { height: 75vh; }
+    /* Hide all editor controls to present a pure specimen (no editing) */
+    .controls-compact { display: none !important; }
+    .controls-compact .slider-control { margin-bottom: 8px; }
+    .controls-compact label { font-size: 12px; }
+    header.app-header { margin-bottom: 12px; }
+    .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <h1>CrossHatch Alphabet — Specimen Showcase</h1>
+    <p class="hint">Left: normal text. Right: CrossHatch rendering with controls. Use the same specimen text in both to compare.</p>
+  </header>
+
+  <main class="specimen-layout">
+    <aside class="panel">
+      <h2>Normal text</h2>
+      <div class="normal-wrap">
+        <pre id="normalText" class="normal-text"></pre>
+      </div>
+    </aside>
+
+    <section class="panel">
+      <h2>CrossHatch rendering</h2>
+      <div class="controls controls-vertical controls-compact">
+        <label for="textInput" class="sr-only">Text</label>
+        <textarea id="textInput" class="text-input" placeholder="Type here..." rows="6"></textarea>
+
+        <div class="slider-control">
+          <label for="fontSize">Font Size (px): <span id="fontSizeValue">100</span></label>
+          <input type="range" id="fontSize" min="8" max="800" value="100" step="1" />
+        </div>
+
+        <div class="slider-control">
+          <label>Alignment:</label>
+          <div class="align-group" role="group" aria-label="Alignment">
+            <button type="button" class="btn align-btn active" data-align="left" aria-label="Align Left">
+              <img class="icon" src="Left.svg" alt="Left" />
+            </button>
+            <button type="button" class="btn align-btn" data-align="center" aria-label="Align Center">
+              <img class="icon" src="Center.svg" alt="Center" />
+            </button>
+            <button type="button" class="btn align-btn" data-align="right" aria-label="Align Right">
+              <img class="icon" src="Right.svg" alt="Right" />
+            </button>
+          </div>
+          <input type="hidden" id="alignment" value="left" />
+        </div>
+
+        <div class="slider-control">
+          <label>
+            <input type="checkbox" id="enableCurves" checked />
+            Smooth corners (L-only)
+          </label>
+        </div>
+
+        <div class="slider-control">
+          <label>
+            <input type="checkbox" id="curveAtCrosses" />
+            Curve at 4-way intersections
+          </label>
+        </div>
+
+        <div class="slider-control">
+          <label>
+            <input type="checkbox" id="curveAtT" />
+            Curve T junctions (two arcs)
+          </label>
+        </div>
+
+        <div class="slider-control">
+          <label for="strokeWidth">Stroke Width: <span id="strokeWidthValue">6</span>px</label>
+          <input type="range" id="strokeWidth" min="1" max="60" value="6" step="0.5" />
+        </div>
+
+        <div class="slider-control">
+          <label>
+            <input type="checkbox" id="allCaps" />
+            Toggle ALL CAPS
+          </label>
+        </div>
+
+        <div class="slider-control">
+          <label>
+            <input type="checkbox" id="taperedEnds" />
+            Tapered brush ends
+          </label>
+        </div>
+
+        <div class="slider-control">
+          <label for="maxCharsPerLine">Max chars per line: <span id="maxCharsPerLineValue">40</span></label>
+          <input type="range" id="maxCharsPerLine" min="10" max="100" value="40" step="1" />
+        </div>
+
+        <div class="button-row">
+          <button id="clearBtn" class="btn" type="button" title="Clear input">Clear</button>
+          <button id="exportSvgBtn" class="btn" type="button" title="Download SVG">Export SVG</button>
+          <button id="exportPngBtn" class="btn" type="button" title="Download PNG">Export PNG</button>
+          <a href="raster.html" class="btn" id="navToRaster">Raster Mode</a>
+        </div>
+      </div>
+
+      <div class="right-pane canvas-wrap" style="margin-top:8px;">
+        <div id="canvas" class="canvas" aria-label="Rendered text area">
+          <svg id="canvasSvg" class="canvas-svg" xmlns="http://www.w3.org/2000/svg">
+            <g id="canvasContent"></g>
+          </svg>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Embed specimen content locally to avoid cross-origin fetch issues -->
+  <script type="text/plain" id="specimenText">
+CROSSHATCH ALPHABET — SPECIMEN / KEY
+
+Tip: Paste this entire document into the app’s Text box. Toggle controls (Smooth corners, Tapered ends, Stroke width, Alignment, Max chars/line) to see different behaviors.
+
+============================================================
+SECTION 1 — UPPERCASE A–Z
+============================================================
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+Repeat blocks
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+============================================================
+SECTION 2 — LOWERCASE a–z (one-blank variants)
+============================================================
+abcdefghijklmnopqrstuvwxyz
+
+Repeat blocks
+abcdefghijklmnopqrstuvwxyz
+abcdefghijklmnopqrstuvwxyz
+
+============================================================
+SECTION 3 — DIGITS (gap strokes) & PUNCTUATION
+============================================================
+0123456789
+.,!?;:'" -_/\\()[]{}+=&#@*%$
+
+Digit breakdown rows (gap behavior):
+00000 11111 22222 33333 44444
+55555 66666 77777 88888 99999
+
+============================================================
+SECTION 4 — WORD PANGRAMS (coverage + rhythm)
+============================================================
+THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.
+SPHINX OF BLACK QUARTZ, JUDGE MY VOW!
+PACK MY BOX WITH FIVE DOZEN LIQUOR JUGS — 0123456789.
+
+Mixed case pangrams
+The Quick Brown Fox Jumps Over The Lazy Dog.
+Sphinx Of Black Quartz, Judge My Vow!
+
+============================================================
+SECTION 5 — JOIN STRESS (seams, overlaps, tapers)
+============================================================
+PPPPPPPPPP  (P = HHH: horizontal bands)
+TTTTTTTTTT  (T = VVV: vertical stacks)
+IIIIIIIIII  (I = HHV)
+XXXXXX      (X = CVC: repeated crosses)
+OOOOOO      (O = HVH)
+HHHHH HHHHH (mix with space to force free-end tapers)
+VVVVV VVVVV
+
+Alternation (edge cases)
+AVAVAVAVAV
+MNMNMNMNMN
+WEWEWEWEWE
+HCHCHCHCHC
+VHVHVHVHVH
+
+============================================================
+SECTION 6 — GAP VARIANTS IN CONTEXT (digits encode h/v/c)
+============================================================
+GAP: 0000  — horizontal center gaps (h+h+h)
+GAP: 1111  — hh+v mix
+GAP: 2222  — hh+c mix
+GAP: 3333  — hv+h mix
+GAP: 4444  — hv+v mix
+GAP: 5555  — hv+c mix
+GAP: 6666  — hc+h mix
+GAP: 7777  — hc+v mix
+GAP: 8888  — hc+c mix
+GAP: 9999  — v+hh mix
+
+Contrast line (letters next to gaps)
+HELLO 0000 WORLD 9999
+
+============================================================
+SECTION 7 — ALIGNMENT & WRAP (toggle Left/Center/Right)
+============================================================
+Short
+This is a medium length line.
+This is a considerably longer line intended to demonstrate how wrapping interacts with the rotated layout and character grid when Max chars per line is adjusted.
+
+Centering parity (odd/even lengths)
+ODD
+EVEN
+ODDER
+EVENER
+ODDEST
+
+============================================================
+SECTION 8 — MULTILINE BLOCKS (line height & baselines)
+============================================================
+HELLO
+WORLD
+CROSSHATCH
+ALPHABET
+VECTOR
+COMPOSER
+
+Mixed lengths for wrap + taper endpoints
+ENDS
+AT TAPER POINTS
+AND CONTINUES TO NEXT LINE
+
+============================================================
+SECTION 9 — CURVE MODES (toggle Smooth corners / T / 4-way)
+============================================================
+L-CORNER SAMPLER
+LTLTLT LT LT LT
+HV HV HV HV HV
+
+CROSS SAMPLER
++ + + + +
+XXXXX XXXXX XXXXX
+
+T-JUNCTION SAMPLER
+TTTTT  TTTTT  TTTTT
+
+============================================================
+SECTION 10 — STROKE-WIDTH & TAPER VISUALS
+============================================================
+Set a thick stroke to inspect overdraw/overlap
+EDGE EDGE EDGE EDGE
+FREE END      FREE END
+LEFT TAPER →  ← RIGHT TAPER
+TOP TAPER  ↑  ↓ BOTTOM TAPER
+
+============================================================
+SECTION 11 — LONG PARAGRAPH (wrap + limit)
+============================================================
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere, sem at dictum convallis, turpis dui cursus eros, id hendrerit nisl mauris sed erat. Sed blandit, lorem at volutpat ultricies, velit arcu imperdiet orci, vitae fringilla eros lacus at nibh. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Curabitur aliquam, quam sed efficitur rutrum, justo justo sollicitudin nulla, vitae luctus eros quam nec mauris. Etiam faucibus pharetra arcu, sed porttitor nisl consequat ac.
+
+============================================================
+SECTION 12 — MIXED GRID (digits, case, punctuation)
+============================================================
+A1B2C3D4E5 F6G7H8I9J0
+k-l_m+n=o p/q\\r(s)t{u}v[w]x y@z#&*$%
+
+END OF SPECIMEN
+  </script>
+
+  <script src="vector-main.js"></script>
+  <script>
+    (function() {
+      const specimen = document.getElementById('specimenText').textContent.trim();
+      const normal = document.getElementById('normalText');
+      const input = document.getElementById('textInput');
+      if (normal) normal.textContent = specimen;
+      if (input) {
+        input.value = specimen;
+        // Kick the render pipeline in vector-main.js
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      // Keep the two panes in sync when user edits the right textarea
+      if (input && normal) {
+        input.addEventListener('input', () => {
+          normal.textContent = input.value;
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossHatch Alphabet Composer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>CrossHatch Alphabet - Raster Composer</h1>
+    <p class="hint">
+      Type your text below. Letters render as PNGs with diagonal offsets. Single space = soft break (down 50px). Double space or period = new word (down 100px). Enter = new column (to the right).
+      <a href="index.html" class="nav-link" id="navToVector">Switch to Vector Mode</a>
+    </p>
+    <div class="controls">
+      <label for="textInput" class="sr-only">Text</label>
+      <textarea id="textInput" class="text-input" placeholder="Type here..." rows="2"></textarea>
+      <label class="controls-pack" style="display:flex; align-items:center; gap:6px;">
+        <input id="packToggle" type="checkbox" />
+        <span>Pack columns</span>
+      </label>
+      <label class="controls-pack" style="display:flex; align-items:center; gap:6px;">
+        <input id="packSyllablesToggle" type="checkbox" />
+        <span>Pack syllables (vertical)</span>
+      </label>
+      <label class="controls-pack" style="display:flex; align-items:center; gap:6px;">
+        <input id="ritualDwarvenToggle" type="checkbox" />
+        <span>RITUAL DWARVEN</span>
+      </label>
+      <label class="controls-pack" style="display:flex; align-items:center; gap:6px;">
+        <input id="rotateToggle" type="checkbox" />
+        <span>Horizontalize (left→right)</span>
+      </label>
+      <button id="clearBtn" class="btn" type="button" title="Clear input">Clear</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="canvas-wrap">
+      <div id="canvas" class="canvas" aria-label="Rendered text area">
+        <div id="canvasContent" class="canvas-content"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <small>Letter tiles assumed 310×110 px (display scaled to 25%). Available: A–Z. If an image is missing, a placeholder box is shown.</small>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

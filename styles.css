@@ -1,0 +1,152 @@
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+}
+/*
+  CrossHatch Alphabet — CSS quick knobs
+  - Visual scale: see .canvas-content transform: scale(0.25). Change to 0.2, 0.5, etc.
+    IMPORTANT: If you change the scale here, also update SCALE in main.js (used to size the outer canvas height).
+  - Tile size: .tile and .tile img (310x110). These should match the PNG intrinsic size.
+    If you change them, also update LETTER_WIDTH/LETTER_HEIGHT in main.js so positioning stays correct.
+  - Canvas styling: .canvas controls the visible area (min-height, border, background, scrolling).
+  - Controls styling: .text-input and .btn adjust the input and button look.
+  - Placeholder style: .placeholder controls the fallback box when an image is missing.
+*/
+
+* { box-sizing: border-box; }
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  border-bottom: 1px solid #e8e8e8;
+  padding: 16px 20px 10px;
+}
+/* Sticky header with input controls */
+.app-header h1 {
+  font-size: 1.25rem;
+  margin: 0 0 6px;
+}
+.hint { color: #666; margin: 0 0 10px; font-size: 0.9rem; }
+
+.nav-link {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 4px 10px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #333;
+  font-size: 0.85rem;
+}
+
+.nav-link:hover {
+  background: #e8e8e8;
+}
+
+.controls { display: flex; gap: 8px; align-items: center; }
+.text-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+/* Text input sizing, border and radius */
+.btn {
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  background: #f3f3f3;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn:hover { background: #ececec; }
+/* Button look and hover */
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.canvas-wrap { 
+  padding: 16px 20px; 
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+  border: 1px dashed #ddd;
+  border-radius: 10px;
+  overflow: auto;
+}
+/* Visible drawing area (outer container, not scaled) */
+
+.canvas-content {
+  position: relative;
+  transform-origin: top left;
+}
+
+/* Transform modes toggled from JS */
+.scale-only {
+  transform: scale(1);
+}
+.scale-rot45 {
+  /* Rotate clockwise 45deg to make 45° diagonals horizontal */
+  transform: rotate(-45deg) scale(0.25);
+}
+
+.tile {
+/* Inner content that is visually scaled down */
+  position: absolute;
+  width: 310px;
+  height: 110px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Absolute-positioned letter tiles — keep in sync with PNG size and main.js constants */
+.tile img {
+  display: block;
+  width: 310px;
+  height: 110px;
+  object-fit: contain;
+}
+
+/* Rotate individual letters 45deg counter-clockwise when horizontalizing */
+.tile img.rot-ccw45 {
+  /* Counter-clockwise 45° */
+  transform: rotate(-45deg);
+  transform-origin: 50% 50%;
+}
+
+.placeholder {
+/* Letter image fills the tile size without distortion */
+  background: repeating-linear-gradient(45deg, #f6f6f6, #f6f6f6 8px, #f0f0f0 8px, #f0f0f0 16px);
+  color: #999;
+  border: 1px dashed #bbb;
+  font-weight: 600;
+  font-size: 48px;
+}
+
+/* Fallback when an image is missing — tweak colors, border, and font size here */
+.app-footer { padding: 10px 20px 30px; color: #666; }
+
+/* Accessibility */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}

@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossHatch — Export Rotated Characters</title>
+  <link rel="stylesheet" href="vector-styles.css" />
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #fafaff; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 24px; }
+    h1 { text-align: center; margin-bottom: 32px; }
+    .char-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 24px; }
+    .char-cell { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px; text-align: center; box-shadow: 0 2px 8px #0001; }
+    .char-label { font-size: 32px; font-weight: bold; margin-bottom: 8px; }
+    .svg-box { width: 100px; height: 100px; margin: 0 auto 8px auto; display: flex; align-items: center; justify-content: center; }
+    .export-btn { display: block; margin: 0 auto; padding: 4px 12px; font-size: 14px; border-radius: 6px; border: 1px solid #888; background: #f5f5f5; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Export Rotated Characters (45° SVGs)</h1>
+    <div style="text-align: center; margin-bottom: 24px;">
+      <button id="exportAllBtn" style="padding: 12px 24px; font-size: 16px; border-radius: 8px; border: 1px solid #333; background: #4CAF50; color: white; cursor: pointer; font-weight: bold;">Download All as ZIP</button>
+    </div>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+
+  <!-- Hidden renderer for SVG generation -->
+  <div id="tempRender" style="position:absolute;left:-9999px;top:0;visibility:hidden;width:0;height:0;overflow:hidden;">
+    <div class="controls">
+      <textarea id="textInput" rows="1"></textarea>
+      <input type="range" id="fontSize" min="8" max="800" value="80" step="1" />
+      <span id="fontSizeValue">80</span>
+      <input type="hidden" id="alignment" value="center" />
+      <input type="checkbox" id="enableCurves" />
+      <input type="checkbox" id="curveAtCrosses" />
+      <input type="checkbox" id="curveAtT" />
+      <input type="range" id="strokeWidth" min="1" max="60" value="8" step="0.5" />
+      <span id="strokeWidthValue">8</span>
+      <input type="checkbox" id="allCaps" />
+      <input type="checkbox" id="taperedEnds" />
+      <input type="range" id="maxCharsPerLine" min="1" max="10" value="1" step="1" />
+      <span id="maxCharsPerLineValue">1</span>
+      <a id="navToRaster" href="raster.html">Raster</a>
+      <button id="clearBtn" type="button">Clear</button>
+      <button id="exportSvgBtn" type="button">SVG</button>
+      <button id="exportPngBtn" type="button">PNG</button>
+    </div>
+    <div id="canvas" class="canvas" aria-label="Rendered text area">
+      <svg id="canvasSvg" class="canvas-svg" xmlns="http://www.w3.org/2000/svg">
+        <g id="canvasContent"></g>
+      </svg>
+    </div>
+  </div>
+
+  <script src="vector-main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script>
+    console.log('Export script starting...');
+    // Character set: A-Z, a-z, 0-9, basic punctuation
+    const CHARACTERS = [
+      ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      ...'abcdefghijklmnopqrstuvwxyz',
+      ...'0123456789',
+      '.', ',', ':', ';', '!', '?', '-', '_', '(', ')', '[', ']', '{', '}', '/', '\\', '|', '@', '#', '$', '%', '&', '*', '+', '=', '<', '>'
+    ];
+    const charGrid = document.getElementById('charGrid');
+    const inputEl = document.getElementById('textInput');
+    const fontSizeEl = document.getElementById('fontSize');
+    const fontSizeValueEl = document.getElementById('fontSizeValue');
+    const strokeWidthEl = document.getElementById('strokeWidth');
+    const strokeWidthValueEl = document.getElementById('strokeWidthValue');
+    const alignmentEl = document.getElementById('alignment');
+    const enableCurvesEl = document.getElementById('enableCurves');
+    const taperedEndsEl = document.getElementById('taperedEnds');
+    const tempRender = document.getElementById('tempRender');
+
+    // Set renderer defaults for export
+  if (fontSizeEl && fontSizeValueEl) { fontSizeEl.value = '80'; fontSizeValueEl.textContent = '80'; }
+  if (strokeWidthEl && strokeWidthValueEl) { strokeWidthEl.value = '8'; strokeWidthValueEl.textContent = '8'; }
+  if (alignmentEl) alignmentEl.value = 'center';
+  // Use current settings for curves/tapers; do not override
+
+    // Constants from vector-main.js
+    const GRID_STEP = 120;
+    const CHAR_GRID_SIZE = GRID_STEP * 3; // 360 units for 3x3 grid
+
+    function renderCharSVG(char) {
+      return new Promise(resolve => {
+        inputEl.value = char;
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        console.log('[renderCharSVG] Set input value:', char);
+        // Wait two frames for renderer to update
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const liveSvg = document.getElementById('canvasSvg');
+            if (liveSvg && liveSvg.childNodes.length) {
+              const content = liveSvg.querySelector('#canvasContent');
+              console.log('[renderCharSVG] canvasContent children:', content ? content.children.length : 'none');
+              if (!content || !content.children.length) {
+                console.warn('[renderCharSVG] No content children for char:', char);
+                resolve(null);
+                return;
+              }
+              // Get actual bounding box of rendered content
+              let minX = 1e6, minY = 1e6, maxX = -1e6, maxY = -1e6;
+              for (const el of content.children) {
+                if (el.getBBox) {
+                  try {
+                    const bb = el.getBBox();
+                    minX = Math.min(minX, bb.x);
+                    minY = Math.min(minY, bb.y);
+                    maxX = Math.max(maxX, bb.x + bb.width);
+                    maxY = Math.max(maxY, bb.y + bb.height);
+                  } catch(e) {
+                    console.error('[renderCharSVG] getBBox error:', e);
+                  }
+                }
+              }
+              console.log('[renderCharSVG] Bounding box:', { minX, minY, maxX, maxY });
+              if (minX > maxX || minY > maxY) {
+                console.warn('[renderCharSVG] Invalid bounding box for char:', char);
+                resolve(null);
+                return;
+              }
+              const width = maxX - minX;
+              const height = maxY - minY;
+              const padding = Math.max(width, height) * 0.05; // 5% padding
+              const tightW = Math.ceil(width + 2 * padding);
+              const tightH = Math.ceil(height + 2 * padding);
+              const contentCenterX = minX + width / 2;
+              const contentCenterY = minY + height / 2;
+              // Build new SVG with rotation applied
+              const box = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+              box.setAttribute('width', tightW.toString());
+              box.setAttribute('height', tightH.toString());
+              box.setAttribute('viewBox', `0 0 ${tightW} ${tightH}`);
+              box.setAttribute('fill', 'none');
+              box.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+              // Copy <defs> for gradients if present
+              const defs = liveSvg.querySelector('defs');
+              if (defs) {
+                box.appendChild(defs.cloneNode(true));
+              }
+              const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+              // Translate content center to origin, rotate -45°, then translate to canvas center
+              g.setAttribute('transform', `translate(${tightW/2},${tightH/2}) rotate(-45) translate(${-contentCenterX},${-contentCenterY})`);
+              // Copy all children from content
+              for (const el of content.children) {
+                g.appendChild(el.cloneNode(true));
+              }
+              box.appendChild(g);
+              resolve(box);
+            } else {
+              console.warn('[renderCharSVG] liveSvg missing or empty for char:', char);
+              resolve(null);
+            }
+          });
+        });
+      });
+    }
+
+    async function buildGrid() {
+      for (const char of CHARACTERS) {
+        const cell = document.createElement('div');
+        cell.className = 'char-cell';
+        const label = document.createElement('div');
+        label.className = 'char-label';
+        label.textContent = char;
+        const svgBox = document.createElement('div');
+        svgBox.className = 'svg-box';
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'export-btn';
+        exportBtn.textContent = 'Export SVG';
+        cell.appendChild(label);
+        cell.appendChild(svgBox);
+        cell.appendChild(exportBtn);
+        charGrid.appendChild(cell);
+
+        // Render SVG
+        try {
+          const svg = await renderCharSVG(char);
+          if (svg) {
+            svgBox.appendChild(svg);
+            exportBtn.onclick = (e) => {
+              e.preventDefault();
+              console.log('Exporting:', char);
+              try {
+                const serializer = new XMLSerializer();
+                const svgStr = serializer.serializeToString(svg);
+                const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // Sanitize filename for special characters
+                const safeName = char.replace(/[<>:"/\\|?*]/g, '_');
+                const charCode = char.charCodeAt(0);
+                a.download = `char-${safeName}-${charCode}.svg`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }, 100);
+              } catch (err) {
+                console.error('Export error:', err);
+                alert('Export failed: ' + err.message);
+              }
+            };
+            console.log('Rendered:', char);
+          } else {
+            console.warn('No SVG for:', char);
+            svgBox.textContent = 'No render';
+            exportBtn.disabled = true;
+          }
+        } catch (err) {
+          console.error('Render error for', char, ':', err);
+          svgBox.textContent = 'Error';
+          exportBtn.disabled = true;
+        }
+      }
+    }
+
+    buildGrid();
+
+    // Export all as ZIP
+    const exportAllBtn = document.getElementById('exportAllBtn');
+    if (exportAllBtn) {
+      console.log('Export All button found');
+      exportAllBtn.onclick = async () => {
+        console.log('Export All clicked!');
+        const btn = document.getElementById('exportAllBtn');
+        btn.disabled = true;
+        btn.textContent = 'Generating ZIP...';
+        
+        try {
+          const zip = new JSZip();
+          const serializer = new XMLSerializer();
+          
+          // Wait for all characters to be in the grid
+          await new Promise(r => setTimeout(r, 500));
+          
+          // Get all SVGs from the grid
+          const cells = document.querySelectorAll('.char-cell');
+          console.log('Found cells:', cells.length);
+          for (let i = 0; i < cells.length; i++) {
+            const cell = cells[i];
+            const label = cell.querySelector('.char-label').textContent;
+            const svg = cell.querySelector('.svg-box svg');
+            
+            if (svg) {
+              const svgStr = serializer.serializeToString(svg);
+              const safeName = label.replace(/[<>:"/\\|?*]/g, '_');
+              const charCode = label.charCodeAt(0);
+              zip.file(`char-${safeName}-${charCode}.svg`, svgStr);
+            }
+            
+            // Update progress
+            if (i % 10 === 0) {
+              btn.textContent = `Generating ZIP... ${i+1}/${cells.length}`;
+            }
+          }
+          
+          btn.textContent = 'Creating ZIP file...';
+          const blob = await zip.generateAsync({type: 'blob'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'crosshatch-characters.zip';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 100);
+          
+          btn.textContent = 'Download All as ZIP';
+          btn.disabled = false;
+        } catch (err) {
+          console.error('Export error:', err);
+          btn.textContent = 'Error - Try Again';
+          btn.disabled = false;
+        }
+      };
+    } else {
+      console.error('Export All button NOT found!');
+    }
+  </script>
+</body>
+</html>

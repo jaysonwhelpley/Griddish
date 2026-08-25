@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossHatch Alphabet — Two-Panel Showcase</title>
+  <link rel="stylesheet" href="vector-styles.css" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    header { padding: 16px 20px; border-bottom: 1px solid #ddd; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; }
+    .panel { border: 1px solid #ddd; border-radius: 10px; background: var(--panel-bg, #fff); overflow: hidden; display: flex; flex-direction: column; }
+    .panel h2 { margin: 0; padding: 12px 14px; border-bottom: 1px solid #eee; font-size: 16px; }
+    .panel-body { padding: 12px 14px; overflow: auto; }
+
+    /* Left: explainer examples */
+    .examples { display: grid; gap: 12px; }
+    .example { padding: 10px 12px; border: 1px solid #e5e5e5; border-radius: 8px; cursor: pointer; background: #fafafa; }
+    .example:hover { background: #f0f0f0; }
+    .example.active { border-color: #2a73ff; box-shadow: 0 0 0 2px rgba(42,115,255,0.15) inset; }
+    .example .title { font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    .example pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; line-height: 1.35; }
+
+    /* Right: render area */
+    .render-wrap { display: flex; flex-direction: column; height: 100%; }
+    .render-box { position: relative; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; }
+    .canvas { height: 70vh; }
+
+    /* Hide editor controls; keep DOM elements for renderer */
+    .controls-hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CrossHatch Alphabet — Two-Panel Showcase</h1>
+    <p>Click an explainer on the left. The same text renders on the right, with behavior controlled by CSS-like classes (curve, t_curve, x_curve, tapered, all_caps, wt100..wt900, align-left/center/right).</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>Explainers</h2>
+      <div class="panel-body">
+        <div class="examples" id="examples">
+          <div class="example active" data-classes="curve tapered wt400 align-left" data-title="Hello World — curves + tapered, wt400">
+            <div class="title">Hello World — curves + tapered, wt400</div>
+            <pre>HELLO WORLD</pre>
+          </div>
+
+          <div class="example" data-classes="curve x_curve t_curve tapered wt700 align-center all_caps" data-title="Alternation + cross/T curves, wt700, centered, ALL CAPS">
+            <div class="title">Alternation + cross/T curves, wt700, centered, ALL CAPS</div>
+            <pre>AVAVAVAV AVAV\nMNMNMNMN\nWEWEWEWE\nHCHCHCHC\nVHVHVHVH</pre>
+          </div>
+
+          <div class="example" data-classes="curve tapered wt600 align-center" data-title="Digits with gap strokes, wt600, centered">
+            <div class="title">Digits with gap strokes, wt600, centered</div>
+            <pre>0123456789</pre>
+          </div>
+
+          <div class="example" data-classes="curve wt500 tapered align-right" data-title="Pangram — right aligned, tapered, wt500">
+            <div class="title">Pangram — right aligned, tapered, wt500</div>
+            <pre>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.</pre>
+          </div>
+
+          <div class="example" data-classes="wt300 align-left" data-title="Line wrap stress — default (no curves, no taper), wt300">
+            <div class="title">Line wrap stress — default (no curves, no taper), wt300</div>
+            <pre>This is a considerably longer line intended to demonstrate how wrapping interacts with the rotated layout and character grid when Max chars per line is adjusted.</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 id="renderTitle">Preview</h2>
+      <div class="panel-body render-wrap">
+        <!-- Hidden controls required by vector-main.js; they will be programmatically set from classes -->
+        <div class="controls-hidden">
+          <textarea id="textInput" rows="4"></textarea>
+          <input type="range" id="fontSize" min="8" max="800" value="100" step="1" />
+          <span id="fontSizeValue">100</span>
+          <input type="hidden" id="alignment" value="left" />
+          <input type="checkbox" id="enableCurves" checked />
+          <input type="checkbox" id="curveAtCrosses" />
+          <input type="checkbox" id="curveAtT" />
+          <input type="range" id="strokeWidth" min="1" max="60" value="6" step="0.5" />
+          <span id="strokeWidthValue">6</span>
+          <input type="checkbox" id="allCaps" />
+          <input type="checkbox" id="taperedEnds" />
+          <input type="range" id="maxCharsPerLine" min="10" max="100" value="40" step="1" />
+          <a id="navToRaster" href="raster.html">Raster</a>
+          <button id="clearBtn" type="button">Clear</button>
+          <button id="exportSvgBtn" type="button">SVG</button>
+          <button id="exportPngBtn" type="button">PNG</button>
+        </div>
+
+        <div class="render-box" id="renderBox">
+          <div id="canvas" class="canvas" aria-label="Rendered text area">
+            <svg id="canvasSvg" class="canvas-svg" xmlns="http://www.w3.org/2000/svg">
+              <g id="canvasContent"></g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="vector-main.js"></script>
+  <script>
+    (function() {
+      const EX_CLASS_MAP = {
+        curve: (v=true) => setChecked('enableCurves', v),
+        t_curve: (v=true) => setChecked('curveAtT', v),
+        x_curve: (v=true) => setChecked('curveAtCrosses', v),
+        tapered: (v=true) => setChecked('taperedEnds', v),
+        all_caps: (v=true) => setChecked('allCaps', v),
+        'align-left': () => setAlign('left'),
+        'align-center': () => setAlign('center'),
+        'align-right': () => setAlign('right')
+      };
+
+      const examplesEl = document.getElementById('examples');
+      const renderTitleEl = document.getElementById('renderTitle');
+      const inputEl = document.getElementById('textInput');
+      const strokeWidthEl = document.getElementById('strokeWidth');
+      const strokeWidthValueEl = document.getElementById('strokeWidthValue');
+
+      function setChecked(id, val) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.checked = !!val;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      function setAlign(val) {
+        const el = document.getElementById('alignment');
+        if (el) {
+          el.value = val;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      function setStrokeByWeightClass(cls) {
+        const m = cls.match(/^wt(\d{3})$/);
+        if (!m) return false;
+        const w = parseInt(m[1], 10); // 100..900
+        // Map 100..900 -> 2..24 px linearly
+        const sw = Math.round((2 + ((w - 100) / 800) * (24 - 2)) * 10) / 10;
+        if (strokeWidthEl) {
+          strokeWidthEl.value = String(sw);
+          if (strokeWidthValueEl) strokeWidthValueEl.textContent = String(sw);
+          strokeWidthEl.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        return true;
+      }
+
+      function applyClasses(str) {
+        // Reset to defaults
+        setChecked('enableCurves', false);
+        setChecked('curveAtT', false);
+        setChecked('curveAtCrosses', false);
+        setChecked('taperedEnds', false);
+        setChecked('allCaps', false);
+        setAlign('left');
+
+        const cls = (str || '').split(/\s+/).filter(Boolean);
+        for (const c of cls) {
+          if (EX_CLASS_MAP[c]) { EX_CLASS_MAP[c](); continue; }
+          // stroke weight classes
+          if (setStrokeByWeightClass(c)) continue;
+        }
+      }
+
+      function selectExample(exampleEl) {
+        if (!exampleEl) return;
+        examplesEl.querySelectorAll('.example').forEach(e => e.classList.remove('active'));
+        exampleEl.classList.add('active');
+
+        const txt = exampleEl.querySelector('pre')?.textContent || '';
+        const title = exampleEl.dataset.title || 'Preview';
+        const clazz = exampleEl.dataset.classes || '';
+
+        if (renderTitleEl) renderTitleEl.textContent = title;
+        // Set text and render
+        if (inputEl) {
+          inputEl.value = txt;
+          inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        // Apply classes -> programmatic control updates
+        applyClasses(clazz);
+        // Trigger a render after toggles
+        if (inputEl) inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      examplesEl.addEventListener('click', (e) => {
+        const ex = e.target.closest('.example');
+        if (ex) selectExample(ex);
+      });
+
+      // Initial selection
+      selectExample(examplesEl.querySelector('.example.active'));
+    })();
+  </script>
+</body>
+</html>

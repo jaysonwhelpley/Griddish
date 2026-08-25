@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossHatch — Block Renderer</title>
+  <link rel="stylesheet" href="vector-styles.css" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  .row { display: block; padding: 16px; max-width: 1080px; margin-left: auto; margin-right: auto; }
+    .panel { border: 1px solid #ddd; border-radius: 10px; background: var(--panel-bg, #fff); overflow: hidden; }
+    .panel h2 { margin: 0; padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 15px; }
+    .panel-body { padding: 12px; }
+  .explainer { font-size: 18px; line-height: 1.6; white-space: pre-wrap; }
+  .xh-block { margin: 16px 0; }
+  .xh-english { font-size: 18px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 8px; }
+  .xh-render { border: 1px dashed #ccc; border-radius: 8px; padding: 6px; }
+  /* Temporary render area hidden; we'll snapshot SVG and remove it */
+  #tempRender { display: none; }
+  /* Hide editor controls; keep DOM elements for renderer */
+  .controls, .controls-hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="row">
+    <section class="panel">
+      <h2>Blocks</h2>
+    <div class="panel-body">
+      <div id="blocks">
+        <div class="xh-block wt800 align-left fs30 cols64">
+I have taken r/guspolly's Griddy Cipher and turned it into a fully featured family of scripts. The original had text staggered and mostly vertical, but I have taken the text and turned it 45 degrees counterclockwise and then laid it out horizontally, left to right.
+        </div>
+      </div>
+      </div>
+    </section>
+    <!-- Temporary hidden render area to generate SVG once per block -->
+    <section class="panel controls-hidden">
+      <h2 style="display:none">Hidden Renderer</h2>
+      <div class="panel-body">
+        <div id="tempRender">
+          <div class="controls">
+            <textarea id="textInput" rows="2"></textarea>
+            <input type="range" id="fontSize" min="8" max="800" value="120" step="1" />
+            <span id="fontSizeValue">120</span>
+            <input type="hidden" id="alignment" value="left" />
+            <input type="checkbox" id="enableCurves" />
+            <input type="checkbox" id="curveAtCrosses" />
+            <input type="checkbox" id="curveAtT" />
+            <input type="range" id="strokeWidth" min="1" max="60" value="10" step="0.5" />
+            <span id="strokeWidthValue">10</span>
+            <input type="checkbox" id="allCaps" />
+            <input type="checkbox" id="taperedEnds" />
+            <input type="range" id="maxCharsPerLine" min="10" max="200" value="64" step="1" />
+            <a id="navToRaster" href="raster.html">Raster</a>
+            <button id="clearBtn" type="button">Clear</button>
+            <button id="exportSvgBtn" type="button">SVG</button>
+            <button id="exportPngBtn" type="button">PNG</button>
+          </div>
+          <div id="canvas" class="canvas" aria-label="Rendered text area">
+            <svg id="canvasSvg" class="canvas-svg" xmlns="http://www.w3.org/2000/svg">
+              <g id="canvasContent"></g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="vector-main.js"></script>
+  <script>
+    (function() {
+      function wrapToCols(s, n) {
+        const out = [];
+        let i = 0;
+        while (i < s.length) {
+          // Take up to n characters, try to break at the last space within the window
+          const end = Math.min(i + n, s.length);
+          const chunk = s.slice(i, end);
+          if (end < s.length) {
+            // Prefer last space break
+            const sp = chunk.lastIndexOf(' ');
+            if (sp > 0) {
+              out.push(chunk.slice(0, sp));
+              i = i + sp + 1; // skip the space
+              continue;
+            }
+          }
+          out.push(chunk);
+          i = end;
+        }
+        return out.join('\n');
+      }
+  const inputEl = document.getElementById('textInput');
+      const fontSizeEl = document.getElementById('fontSize');
+      const fontSizeValueEl = document.getElementById('fontSizeValue');
+      const strokeWidthEl = document.getElementById('strokeWidth');
+      const strokeWidthValueEl = document.getElementById('strokeWidthValue');
+  const maxCharsEl = document.getElementById('maxCharsPerLine');
+  const tempRender = document.getElementById('tempRender');
+  const alignmentEl = document.getElementById('alignment');
+  const enableCurvesEl = document.getElementById('enableCurves');
+  const taperedEndsEl = document.getElementById('taperedEnds');
+  const curveAtCrossesEl = document.getElementById('curveAtCrosses');
+  const curveAtTEl = document.getElementById('curveAtT');
+
+  function resetDefaults() {
+    if (enableCurvesEl) enableCurvesEl.checked = false;
+    if (taperedEndsEl) taperedEndsEl.checked = false;
+    if (curveAtCrossesEl) curveAtCrossesEl.checked = false;
+    if (curveAtTEl) curveAtTEl.checked = false;
+    if (alignmentEl) alignmentEl.value = 'left';
+    if (fontSizeEl && fontSizeValueEl) { fontSizeEl.value = '120'; fontSizeValueEl.textContent = '120'; }
+    if (strokeWidthEl && strokeWidthValueEl) { strokeWidthEl.value = '10'; strokeWidthValueEl.textContent = '10'; }
+    if (maxCharsEl) { maxCharsEl.value = '64'; }
+  }
+
+  // Class-based configuration mapping
+  function setChecked(el, val) {
+    if (!el) return; el.checked = !!val; el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  function setAlign(val) {
+    if (!alignmentEl) return; alignmentEl.value = val; alignmentEl.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  function setFontSizeByClass(cls) {
+    const m = cls && cls.match(/^fs(\d{2,3})$/);
+    if (!m) return false;
+    const px = parseInt(m[1], 10);
+    if (fontSizeEl) {
+      fontSizeEl.value = String(px);
+      if (fontSizeValueEl) fontSizeValueEl.textContent = String(px);
+      fontSizeEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return true;
+  }
+  function setColsByClass(cls) {
+    const m = cls && cls.match(/^cols(\d{1,3})$/);
+    if (!m) return false;
+    const cols = Math.max(1, parseInt(m[1], 10));
+    if (maxCharsEl) maxCharsEl.value = String(cols);
+    return true;
+  }
+  function setStrokeByWeightClass(cls) {
+    const m = cls && cls.match(/^wt(\d{3})$/);
+    if (!m) return false;
+    const w = parseInt(m[1], 10);
+    const sw = Math.round((2 + ((w - 100) / 800) * (24 - 2)) * 10) / 10;
+    if (strokeWidthEl) {
+      strokeWidthEl.value = String(sw);
+      if (strokeWidthValueEl) strokeWidthValueEl.textContent = String(sw);
+      strokeWidthEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return true;
+  }
+  const CLASS_MAP = {
+    curve: () => setChecked(enableCurvesEl, true),
+    t_curve: () => setChecked(curveAtTEl, true),
+    x_curve: () => setChecked(curveAtCrossesEl, true),
+    tapered: () => setChecked(taperedEndsEl, true),
+    all_caps: () => setChecked(document.getElementById('allCaps'), true),
+    'align-left': () => setAlign('left'),
+    'align-center': () => setAlign('center'),
+    'align-right': () => setAlign('right'),
+    // Explicit opt-outs for clarity
+    direct: () => setChecked(enableCurvesEl, false),
+    no_curve: () => setChecked(enableCurvesEl, false),
+    'no-curve': () => setChecked(enableCurvesEl, false),
+    untapered: () => setChecked(taperedEndsEl, false),
+    no_tapered: () => setChecked(taperedEndsEl, false),
+    'no-tapered': () => setChecked(taperedEndsEl, false)
+  };
+  function applyClassesFrom(el) {
+    if (!el || !el.classList) return;
+    const cls = Array.from(el.classList);
+    for (const c of cls) {
+      if (CLASS_MAP[c]) { CLASS_MAP[c](); continue; }
+      if (setStrokeByWeightClass(c)) continue;
+      if (setFontSizeByClass(c)) continue;
+      if (setColsByClass(c)) continue;
+    }
+  }
+
+      // Process each .xh-block: English first, then rendered below
+      (async function renderBlocks() {
+        const blocks = Array.from(document.querySelectorAll('.xh-block'));
+        for (const block of blocks) {
+          const original = block.textContent.trim();
+          block.textContent = '';
+          const english = document.createElement('div');
+          english.className = 'xh-english';
+          const rendered = document.createElement('div');
+          rendered.className = 'xh-render';
+
+          // Reset defaults then apply classes from the block
+          resetDefaults();
+          applyClassesFrom(block);
+
+          // Determine columns (from class), default to current maxCharsEl value
+          const cols = (() => {
+            let c = 64;
+            for (const cls of Array.from(block.classList)) {
+              const m = cls.match(/^cols(\d{1,3})$/);
+              if (m) c = Math.max(1, parseInt(m[1], 10));
+            }
+            return c;
+          })();
+          if (maxCharsEl) maxCharsEl.value = String(cols);
+
+          // Wrap and set English text
+          const wrapped = wrapToCols(original, cols);
+          english.textContent = wrapped;
+
+          // Render via hidden controls
+          if (inputEl) {
+            inputEl.value = wrapped;
+            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+
+          // Wait a frame for DOM updates, then snapshot SVG
+          await new Promise(requestAnimationFrame);
+          const liveSvg = document.getElementById('canvasSvg');
+          if (liveSvg) {
+            const clone = liveSvg.cloneNode(true);
+            clone.removeAttribute('id');
+            clone.style.width = '100%';
+            clone.style.height = 'auto';
+            rendered.innerHTML = '';
+            rendered.appendChild(clone);
+          }
+
+          block.appendChild(english);
+          block.appendChild(rendered);
+        }
+      })();
+    })();
+  </script>
+</body>
+</html>
